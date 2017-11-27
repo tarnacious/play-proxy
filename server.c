@@ -6,8 +6,14 @@
 #include <openssl/err.h>
 #include <string.h>
 #include <strings.h>
+#include "certificates.h"
+#include "utils.h"
 
 #define BUFFER_SIZE 1024
+
+
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
 
 int create_socket(int port)
 {
@@ -83,6 +89,13 @@ void configure_context(SSL_CTX *ctx)
 
 int main(int argc, char **argv)
 {
+    RSA *rsa = generate_rsa();
+    generate_csr(rsa);
+    char *buffer = read_file("x509Req.pem");
+    sign(buffer);
+
+    printf("\r\nStart Server\r\n");
+
     int sock;
     SSL_CTX *ctx;
 

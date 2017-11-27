@@ -22,7 +22,10 @@ proxy tunnelling protocol. It is not intended to be a useful proxy server.
     openssl x509 -req -in device.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -out device.crt -days 500 -sha256
 
     // build the server
-    gcc -o server server.c -lssl -lcrypto
+    make
+
+    // run the servwer
+    ./server
 
     // test the server
     openssl s_client -CAfile rootCA.pem -connect 127.0.0.1:4433
