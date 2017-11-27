@@ -76,12 +76,12 @@ void configure_context(SSL_CTX *ctx)
     SSL_CTX_set_ecdh_auto(ctx, 1);
 
     /* Set the key and cert */
-    if (SSL_CTX_use_certificate_file(ctx, "device.crt", SSL_FILETYPE_PEM) <= 0) {
+    if (SSL_CTX_use_certificate_file(ctx, "cert.pem", SSL_FILETYPE_PEM) <= 0) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
     }
 
-    if (SSL_CTX_use_PrivateKey_file(ctx, "device.key", SSL_FILETYPE_PEM) <= 0 ) {
+    if (SSL_CTX_use_PrivateKey_file(ctx, "cert.key", SSL_FILETYPE_PEM) <= 0 ) {
         ERR_print_errors_fp(stderr);
         exit(EXIT_FAILURE);
     }
@@ -89,20 +89,12 @@ void configure_context(SSL_CTX *ctx)
 
 int main(int argc, char **argv)
 {
-    RSA *rsa = generate_rsa();
-    generate_csr(rsa);
-    char *buffer = read_file("x509Req.pem");
-    sign(buffer);
-
     printf("\r\nStart Server\r\n");
 
     int sock;
     SSL_CTX *ctx;
 
     init_openssl();
-    ctx = create_context();
-
-    configure_context(ctx);
 
     sock = create_socket(4433);
 
@@ -124,12 +116,22 @@ int main(int argc, char **argv)
         bzero(buffer, BUFFER_SIZE);
         fprintf(stderr, "Reading header\n");
         read(client, buffer, BUFFER_SIZE - 1);
-        fprintf(stderr, "%s", buffer);
-        bzero(buffer, BUFFER_SIZE);
+        fprintf(stderr, "%s\r\n", buffer);
+
+        char *result = find_re("^CONNECT ([^:]*)", buffer, 1);
+        printf("\r\nHost Found: %s\r\n", result);
+
+        RSA *rsa = generate_rsa();
+        generate_csr(rsa, result);
+        char *mybuffer = read_file("csr.pem");
+        sign(mybuffer);
 
         // lets just assume it was a HTTP/1.1 request and write a response
         const char message[] = "HTTP/1.1 200 OK\r\n\r\n";
         write(client, message, strlen(message));
+
+        ctx = create_context();
+        configure_context(ctx);
 
         ssl = SSL_new(ctx);
         SSL_set_fd(ssl, client);
@@ -144,16 +146,16 @@ int main(int argc, char **argv)
             fprintf(stderr, "%s\r\n\r\n", buffer);
             bzero(buffer, BUFFER_SIZE);
 
-            const char reply[] = "HTTP/1.1 400 Bad Request\r\nConnection: close\r\n\r\n";
+            const char reply[] = "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n";
             fprintf(stderr, "writing response:\r\n%s", reply);
             SSL_write(ssl, reply, strlen(reply));
         }
 
+        SSL_CTX_free(ctx);
         SSL_free(ssl);
         close(client);
     }
 
     close(sock);
-    SSL_CTX_free(ctx);
     cleanup_openssl();
 }

@@ -5,7 +5,7 @@
 #include <openssl/pem.h>
 
 RSA* generate_rsa();
-int generate_csr(RSA *rsa);
+int generate_csr(RSA *rsa, char* host);
 int sign(char* request_str);
 
 #endif

@@ -3,11 +3,8 @@
 #include <openssl/pem.h>
 #include <openssl/x509v3.h>
 
-/*********** where is the ca certificate .pem file ****************************/
-#define CACERT          "./rootCA.pem"
-/*********** where is the ca's private key file *******************************/
-#define CAKEY           "./rootCA.key"
-/*********** The password for the ca's private key ****************************/
+#define CACERT          "./ca.pem"
+#define CAKEY           "./ca.key"
 #define PASS            "password"
 
 
@@ -35,7 +32,13 @@ RSA* generate_rsa()
     pem_key = calloc(keylen+1, 1); /* Null-terminate */
     BIO_read(bio, pem_key, keylen);
 
-    printf("%s", pem_key);
+    FILE *file = fopen("cert.key", "w");
+
+    int results = fputs(pem_key, file);
+    if (results == EOF) {
+        // Failed to write do error code here.
+    }
+    fclose(file);
 
     BIO_free_all(bio);
     free(pem_key);
@@ -44,9 +47,9 @@ RSA* generate_rsa()
 }
 
 
-int generate_csr(RSA *rsa)
+int generate_csr(RSA *rsa, char* host)
 {
-   const char      *szPath = "x509Req.pem";
+   const char      *szPath = "csr.pem";
    X509_REQ        *x509_req = NULL;
    X509_NAME       *x509_name = NULL;
 
@@ -54,7 +57,7 @@ int generate_csr(RSA *rsa)
    const char      *szProvince = "BC";
    const char      *szCity = "Vancouver";
    const char      *szOrganization = "Dynamsoft";
-   const char      *szCommon = "localhost";
+   const char      *szCommon = host;
    EVP_PKEY        *pKey = NULL;
    BIO             *out = NULL; //, *bio_err = NULL;
 
@@ -297,19 +300,19 @@ int sign(char* request_str) {
     goto free;
    }
 
-  /* ------------------------------------------------------------ *
-   *  print the certificate                                       *
-   * -------------------------------------------------------------*/
-  if (! PEM_write_bio_X509(outbio, newcert)) {
-    BIO_printf(outbio, "Error printing the signed certificate\n");
-    goto free;
-   }
+
+  // write the certificate
+  BIO             *out = NULL; //, *bio_err = NULL;
+  out = BIO_new_file("cert.pem","w");
+  PEM_write_bio_X509(out, newcert);
 
   /* ---------------------------------------------------------- *
    * Free up all structures                                     *
    * ---------------------------------------------------------- */
 
   free:
+
+  BIO_free_all(out);
   EVP_PKEY_free(req_pubkey);
   EVP_PKEY_free(ca_privkey);
   X509_REQ_free(certreq);
