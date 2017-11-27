@@ -1,0 +1,28 @@
+A HTTP proxy server that only handles correctly the `CONNECT` verb to the
+server `https://127.0.0.1:4433` where it create a TLS with a valid certificate
+signed by a generated CA certificate and returns `HTTP/1.1 400 Bad Request`.
+
+The is just a project to get familiar with the OpenSSL libary and the HTTP
+proxy tunnelling protocol. It is not intended to be a useful proxy server.
+
+    // create a root CA
+    openssl genrsa -out rootCA.key 2048
+
+    // sign it
+    openssl req -x509 -new -nodes -key rootCA.key -sha256 -days 1024 -out rootCA.pem
+
+    // create a site key
+    openssl genrsa -out device.key 2048
+
+    // create a signing request
+    // Common Name (eg, YOUR name) []: 127.0.0.1
+    openssl req -new -key device.key -out device.csr
+
+    // sign it
+    openssl x509 -req -in device.csr -CA rootCA.pem -CAkey rootCA.key -CAcreateserial -out device.crt -days 500 -sha256
+
+    // build the server
+    gcc -o server server.c -lssl -lcrypto
+
+    // test the server
+    openssl s_client -CAfile rootCA.pem -connect 127.0.0.1:4433
