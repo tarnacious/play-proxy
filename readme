@@ -2,7 +2,7 @@ A HTTP proxy server that only correctly handles the `CONNECT` verb, kind of. It
 create a TLS with a valid certificate signed by a generated CA certificate and
 returns `HTTP/1.1 200 OK`.
 
-The is just a project to get familiar with the OpenSSL libary, the HTTP proxy
+This is just a project to get familiar with the OpenSSL library, the HTTP proxy
 tunnelling protocol and on-the-fly certificate generation. It is not intended
 to be a useful proxy server.
 
@@ -15,8 +15,8 @@ to be a useful proxy server.
     // build the server
     make
 
-    // run the servwer
+    // run the server
     ./server
 
     // test the server
-    curl https://127.0.0.1 --cacert ca.pem --proxy localhost:4433 
+    curl https://any.server.it.does.not.matter --cacert ca.pem --proxy localhost:4433 
